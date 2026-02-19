@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Media Player</title>
+    <style>
+        :root {
+            --win-accent: #0078d4;
+            --win-card: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+            background: #0e0e12;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Ambient background glow */
+        .bg-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #4285f4, #9b51e0);
+            filter: blur(120px);
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        #drop-zone {
+            width: 85%;
+            height: 70%;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--win-card);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        #drop-zone.hover {
+            border-color: var(--win-accent);
+            background: rgba(0, 120, 212, 0.1);
+        }
+
+        video, audio {
+            display: none;
+            width: 95%;
+            max-height: 90%;
+            border-radius: 12px;
+            outline: none;
+        }
+
+        .prompt-content { text-align: center; pointer-events: none; }
+        .prompt-content p { font-size: 1.2rem; opacity: 0.8; }
+
+        /* "Play Something Else" Button */
+        #reset-btn {
+            display: none;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        #reset-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <input type="file" id="file-input" accept="video/*,audio/*">
+
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div id="prompt" class="prompt-content">
+            <p>Drag and drop or <strong>click to add files</strong> to play</p>
+        </div>
+        
+        <video id="video-player" controls></video>
+        <audio id="audio-player" controls></audio>
+    </div>
+
+    <button id="reset-btn" onclick="resetPlayer()">Play something else</button>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const videoPlayer = document.getElementById('video-player');
+        const audioPlayer = document.getElementById('audio-player');
+        const promptText = document.getElementById('prompt');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Setup drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
+        });
+
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('hover'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+
+        // Handle File Selection (Drop or Click)
+        dropZone.addEventListener('drop', (e) => {
+            dropZone.classList.remove('hover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+            const fileURL = URL.createObjectURL(file);
+            
+            // Hide prompt, show reset button
+            promptText.style.display = 'none';
+            resetBtn.style.display = 'block';
+            dropZone.style.borderStyle = 'solid';
+            dropZone.style.cursor = 'default';
+            dropZone.onclick = null; // Disable click-to-open while playing
+
+            if (file.type.includes('video')) {
+                videoPlayer.style.display = 'block';
+                audioPlayer.style.display = 'none';
+                videoPlayer.src = fileURL;
+                videoPlayer.play();
+            } else if (file.type.includes('audio')) {
+                audioPlayer.style.display = 'block';
+                videoPlayer.style.display = 'none';
+                audioPlayer.src = fileURL;
+                audioPlayer.play();
+            }
+        }
+
+        function resetPlayer() {
+            // Stop media
+            videoPlayer.pause();
+            audioPlayer.pause();
+            videoPlayer.src = "";
+            audioPlayer.src = "";
+            
+            // UI Reset
+            videoPlayer.style.display = 'none';
+            audioPlayer.style.display = 'none';
+            promptText.style.display = 'block';
+            resetBtn.style.display = 'none';
+            dropZone.style.borderStyle = 'dashed';
+            dropZone.style.cursor = 'pointer';
+            
+            // Re-enable click to open
+            dropZone.onclick = () => fileInput.click();
+            fileInput.value = ""; // Clear file input
+        }
+    </script>
+</body>
+</html>
